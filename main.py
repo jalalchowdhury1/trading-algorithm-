@@ -91,12 +91,31 @@ def send_telegram_message(message, bot_token, chat_id):
         print(f"⚠️  Telegram send failed: {str(e)}")
         return False
 
-def format_telegram_report(final_decision, rsi_cache):
+def format_telegram_report(final_decision, rsi_cache, decision_path):
     """
-    Format trading signal and key RSI values for Telegram.
+    Format trading signal, decision path, and key RSI values for Telegram.
     Returns formatted message string.
     """
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S ET')
+    timestamp = datetime.now().strftime('%Y-%m-%d %I:%M %p ET')
+
+    # Format decision path with emojis
+    path_lines = []
+    for i, step in enumerate(decision_path, 1):
+        ticker = step['ticker']
+        window = step['window']
+        operator = step['operator']
+        threshold = step['threshold']
+        result = step['result']
+        current_rsi = step['current_rsi']
+
+        # Choose emoji based on result
+        emoji = "✅" if result else "❌"
+
+        # Format the condition
+        condition = f"{ticker} RSI({window}) {operator} {threshold}"
+        path_lines.append(f"{emoji} {condition} → {result} ({current_rsi:.1f})")
+
+    decision_path_text = "\n".join(path_lines)
 
     # Get key RSI values
     qqq_rsi = rsi_cache.get(('QQQ', 9), 0)
@@ -104,15 +123,27 @@ def format_telegram_report(final_decision, rsi_cache):
     xlp_rsi = rsi_cache.get(('XLP', 9), 0)
     vixy_rsi_50 = rsi_cache.get(('VIXY', 50), 0)
 
+    # Determine signal emoji based on signal type
+    signal_emoji = "🛡️"  # Default
+    if "VIX" in final_decision:
+        signal_emoji = "🛡️"  # Defensive
+    elif "Buy" in final_decision or any(x in final_decision for x in ["SOXL", "FNGU", "TECL", "TQQQ", "UPRO"]):
+        signal_emoji = "🚀"  # Aggressive long
+    elif "LABD" in final_decision:
+        signal_emoji = "📉"  # Short
+    elif "BIL" in final_decision:
+        signal_emoji = "💵"  # Cash
+
     message = f"""🎯 <b>TRADING SIGNAL</b>
-──────────────
-{final_decision}
+━━━━━━━━━━━━━━━━
+{signal_emoji} <b>{final_decision}</b>
+
+🔍 <b>DECISION PATH:</b>
+{decision_path_text}
 
 📊 <b>KEY RSI VALUES:</b>
-QQQ: {qqq_rsi:.2f}
-SPY: {spy_rsi:.2f}
-XLP: {xlp_rsi:.2f}
-VIXY(50): {vixy_rsi_50:.2f}
+📈 QQQ: {qqq_rsi:.1f} | SPY: {spy_rsi:.1f}
+📉 XLP: {xlp_rsi:.1f} | VIXY(50): {vixy_rsi_50:.1f}
 
 ⏰ {timestamp}"""
 
@@ -297,10 +328,13 @@ def execute_logic():
     """
     Step 3: Logic Execution (The Decision Tree)
     Traverses the decision tree based on RSI conditions.
+    Returns: (final_decision, decision_path)
     """
     print("\n" + "="*80)
     print("STEP 3: LOGIC EXECUTION (DECISION TREE)")
     print("="*80 + "\n")
+
+    decision_path = []
 
     # Define the logic tree as a dictionary
     logic_tree = {
@@ -565,6 +599,16 @@ def execute_logic():
         print(f"Step {step_count}: ID {current_id} ({node['ticker']} RSI({node['window']}) {operator} {node['threshold']}?) -> ", end="")
         print(f"Result: {result} (Current RSI: {current_rsi:.2f})")
 
+        # Record this step in decision path
+        decision_path.append({
+            'ticker': node['ticker'],
+            'window': node['window'],
+            'operator': operator,
+            'threshold': node['threshold'],
+            'result': result,
+            'current_rsi': current_rsi
+        })
+
         # Determine next step
         next_step = node['true'] if result else node['false']
 
@@ -580,7 +624,7 @@ def execute_logic():
             print("✓ FINAL RESULT:")
             print(f"  {final_result}")
             print("="*80 + "\n")
-            return final_result
+            return final_result, decision_path
         else:
             print(f"  → Going to ID {next_step}\n")
             current_id = next_step
@@ -637,7 +681,7 @@ def main():
     calculate_all_rsi()
 
     # Step 3: Execute logic tree
-    final_decision = execute_logic()
+    final_decision, decision_path = execute_logic()
 
     # Step 4: Check if we should notify
     print("\n" + "="*80)
@@ -669,7 +713,7 @@ def main():
         print("STEP 5: SENDING TELEGRAM NOTIFICATION")
         print("="*80 + "\n")
 
-        telegram_message = format_telegram_report(final_decision, rsi_cache)
+        telegram_message = format_telegram_report(final_decision, rsi_cache, decision_path)
         success = send_telegram_message(telegram_message, bot_token, chat_id)
 
         if success:

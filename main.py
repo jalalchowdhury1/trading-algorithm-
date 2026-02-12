@@ -4,6 +4,73 @@ import numpy as np
 from datetime import datetime, timedelta
 import os
 import requests
+import json
+
+STATE_FILE = 'trading_state.json'
+
+def read_last_state():
+    """
+    Read the last trading signal state from file.
+    Returns dict with 'signal' and 'date', or None if file doesn't exist.
+    """
+    try:
+        if os.path.exists(STATE_FILE):
+            with open(STATE_FILE, 'r') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"⚠️  Could not read state file: {e}")
+    return None
+
+def write_state(signal, notified):
+    """
+    Write current trading signal state to file.
+
+    Args:
+        signal: The current trading signal
+        notified: Whether we sent a notification this time
+    """
+    try:
+        state = {
+            'signal': signal,
+            'date': datetime.now().strftime('%Y-%m-%d'),
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'notified': notified
+        }
+        with open(STATE_FILE, 'w') as f:
+            json.dump(state, f, indent=2)
+    except Exception as e:
+        print(f"⚠️  Could not write state file: {e}")
+
+def should_notify(current_signal, last_state):
+    """
+    Determine if we should send a Telegram notification.
+
+    Rules:
+    - First run of the day: Always notify
+    - Signal changed: Always notify
+    - Same signal, same day: Don't notify
+
+    Returns: (should_notify: bool, reason: str)
+    """
+    today = datetime.now().strftime('%Y-%m-%d')
+
+    # No previous state = first run ever
+    if last_state is None:
+        return True, "First run ever"
+
+    last_date = last_state.get('date', '')
+    last_signal = last_state.get('signal', '')
+
+    # First run of the trading day
+    if last_date != today:
+        return True, f"First check of trading day ({today})"
+
+    # Signal changed
+    if current_signal != last_signal:
+        return True, f"Signal changed: '{last_signal}' → '{current_signal}'"
+
+    # Same signal, same day
+    return False, f"No change (still '{current_signal}')"
 
 def send_telegram_message(message, bot_token, chat_id):
     """
@@ -572,13 +639,34 @@ def main():
     # Step 3: Execute logic tree
     final_decision = execute_logic()
 
-    # Step 4: Send Telegram notification (if configured)
+    # Step 4: Check if we should notify
+    print("\n" + "="*80)
+    print("STEP 4: NOTIFICATION DECISION")
+    print("="*80 + "\n")
+
+    last_state = read_last_state()
+    notify, reason = should_notify(final_decision, last_state)
+
+    print(f"Current Signal: {final_decision}")
+    if last_state:
+        print(f"Last Signal: {last_state.get('signal', 'N/A')} (on {last_state.get('date', 'N/A')})")
+    else:
+        print("Last Signal: None (first run)")
+
+    print(f"\nDecision: {'NOTIFY' if notify else 'SKIP'}")
+    print(f"Reason: {reason}")
+
+    print("\n" + "="*80 + "\n")
+
+    # Step 5: Send Telegram notification (if needed and configured)
     bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
     chat_id = os.getenv('TELEGRAM_CHAT_ID')
 
-    if bot_token and chat_id:
+    notified = False
+
+    if notify and bot_token and chat_id:
         print("\n" + "="*80)
-        print("STEP 4: SENDING TELEGRAM NOTIFICATION")
+        print("STEP 5: SENDING TELEGRAM NOTIFICATION")
         print("="*80 + "\n")
 
         telegram_message = format_telegram_report(final_decision, rsi_cache)
@@ -586,14 +674,22 @@ def main():
 
         if success:
             print("✓ Telegram message sent successfully!")
+            notified = True
         else:
             print("⚠️  Failed to send Telegram message (see error above)")
 
         print("\n" + "="*80 + "\n")
+    elif not notify:
+        print("\n" + "="*80)
+        print("ℹ️  Skipping Telegram notification (no change)")
+        print("="*80 + "\n")
     else:
         print("\n" + "="*80)
         print("ℹ️  Telegram not configured (TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID not set)")
         print("="*80 + "\n")
+
+    # Step 6: Save state for next run
+    write_state(final_decision, notified)
 
     print("\n" + "╔" + "="*78 + "╗")
     print("║" + " "*25 + "EXECUTION COMPLETE" + " "*35 + "║")

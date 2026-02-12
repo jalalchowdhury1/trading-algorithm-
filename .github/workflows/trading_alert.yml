@@ -1,8 +1,8 @@
-name: Trading Algorithm Hourly
+name: Trading Algorithm Every 30min
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Every hour at :00
+    - cron: '*/30 * * * *'  # Every 30 minutes
   workflow_dispatch:  # Allow manual trigger for testing
 
 jobs:
@@ -34,3 +34,12 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python3 main.py
+
+      - name: Commit state file if changed
+        if: steps.market_check.outcome == 'success'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update trading signal state [skip ci]"
+          git push

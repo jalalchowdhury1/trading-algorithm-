@@ -2,6 +2,54 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+import os
+import requests
+
+def send_telegram_message(message, bot_token, chat_id):
+    """
+    Send message to Telegram using Bot API.
+    Returns True if successful, False otherwise.
+    """
+    try:
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        payload = {
+            'chat_id': chat_id,
+            'text': message,
+            'parse_mode': 'HTML'
+        }
+        response = requests.post(url, json=payload, timeout=10)
+        response.raise_for_status()
+        return True
+    except Exception as e:
+        print(f"⚠️  Telegram send failed: {str(e)}")
+        return False
+
+def format_telegram_report(final_decision, rsi_cache):
+    """
+    Format trading signal and key RSI values for Telegram.
+    Returns formatted message string.
+    """
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S ET')
+
+    # Get key RSI values
+    qqq_rsi = rsi_cache.get(('QQQ', 9), 0)
+    spy_rsi = rsi_cache.get(('SPY', 9), 0)
+    xlp_rsi = rsi_cache.get(('XLP', 9), 0)
+    vixy_rsi_50 = rsi_cache.get(('VIXY', 50), 0)
+
+    message = f"""🎯 <b>TRADING SIGNAL</b>
+──────────────
+{final_decision}
+
+📊 <b>KEY RSI VALUES:</b>
+QQQ: {qqq_rsi:.2f}
+SPY: {spy_rsi:.2f}
+XLP: {xlp_rsi:.2f}
+VIXY(50): {vixy_rsi_50:.2f}
+
+⏰ {timestamp}"""
+
+    return message
 
 # List of tickers to download
 TICKERS = ['QQQ', 'VIXY', 'SPY', 'IOO', 'XLP', 'VTV', 'XLF', 'VOX',
@@ -523,6 +571,29 @@ def main():
 
     # Step 3: Execute logic tree
     final_decision = execute_logic()
+
+    # Step 4: Send Telegram notification (if configured)
+    bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
+    chat_id = os.getenv('TELEGRAM_CHAT_ID')
+
+    if bot_token and chat_id:
+        print("\n" + "="*80)
+        print("STEP 4: SENDING TELEGRAM NOTIFICATION")
+        print("="*80 + "\n")
+
+        telegram_message = format_telegram_report(final_decision, rsi_cache)
+        success = send_telegram_message(telegram_message, bot_token, chat_id)
+
+        if success:
+            print("✓ Telegram message sent successfully!")
+        else:
+            print("⚠️  Failed to send Telegram message (see error above)")
+
+        print("\n" + "="*80 + "\n")
+    else:
+        print("\n" + "="*80)
+        print("ℹ️  Telegram not configured (TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID not set)")
+        print("="*80 + "\n")
 
     print("\n" + "╔" + "="*78 + "╗")
     print("║" + " "*25 + "EXECUTION COMPLETE" + " "*35 + "║")

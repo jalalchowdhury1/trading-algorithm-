@@ -6,6 +6,9 @@ on:
     - cron: '30,0 13-20 * * 1-5'  # :00 and :30 past hours 13-20 UTC, weekdays only
   workflow_dispatch:  # Allow manual trigger for testing
 
+permissions:
+  contents: write  # Allow workflow to commit and push changes
+
 jobs:
   trading-signal:
     runs-on: ubuntu-latest

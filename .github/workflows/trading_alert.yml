@@ -15,6 +15,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -44,6 +47,11 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add -A
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update trading signal state [skip ci]"
-          git push
+          git add trading_state.json
+          if ! git diff --quiet HEAD -- trading_state.json; then
+            git commit -m "Update trading signal state [skip ci]"
+            git push
+            echo "✓ State file committed and pushed"
+          else
+            echo "ℹ️ No state changes to commit"
+          fi

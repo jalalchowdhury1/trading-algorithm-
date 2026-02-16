@@ -2,8 +2,10 @@ name: Trading Algorithm Every 30min
 
 on:
   schedule:
-    # Run every 30 minutes, Mon-Fri, 13:30-21:00 UTC (covers 9:30 AM-4:00 PM ET in both EST and EDT)
-    - cron: '30,0 13-20 * * 1-5'  # :00 and :30 past hours 13-20 UTC, weekdays only
+    # First run at 9:35 AM ET (5 min after market opens)
+    - cron: '35 13-14 * * 1-5'  # Covers both EST (14:35 UTC) and EDT (13:35 UTC)
+    # Then every 30 min from 10:00 AM - 4:00 PM ET
+    - cron: '0,30 14-21 * * 1-5'  # :00 and :30 for hours 14-21 UTC (covers both timezones)
   workflow_dispatch:  # Allow manual trigger for testing
 
 permissions:

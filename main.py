@@ -4,6 +4,7 @@ import numpy as np
 from datetime import datetime, timedelta
 import os
 import requests
+import pytz
 from state_manager import read_state, write_state
 
 
@@ -18,7 +19,9 @@ def should_notify(current_signal, last_state):
 
     Returns: (should_notify: bool, reason: str)
     """
-    today = datetime.now().strftime('%Y-%m-%d')
+    # Get today's date in Eastern Time
+    et_tz = pytz.timezone('America/New_York')
+    today = datetime.now(pytz.UTC).astimezone(et_tz).strftime('%Y-%m-%d')
 
     # No previous state = first run ever
     if last_state is None:
@@ -62,7 +65,10 @@ def format_telegram_report(final_decision, rsi_cache, decision_path):
     Format trading signal, decision path, and key RSI values for Telegram.
     Returns formatted message string.
     """
-    timestamp = datetime.now().strftime('%Y-%m-%d %I:%M %p ET')
+    # Convert UTC to Eastern Time
+    et_tz = pytz.timezone('America/New_York')
+    et_time = datetime.now(pytz.UTC).astimezone(et_tz)
+    timestamp = et_time.strftime('%Y-%m-%d %I:%M %p ET')
 
     # Format decision path with emojis
     path_lines = []

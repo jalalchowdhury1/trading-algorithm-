@@ -34,4 +34,6 @@ htmlcov/
 # AWS Lambda deployment artifacts
 lambda_package/
 lambda_deployment.zip
+lambda_deployment_fixed.zip
 trading-dependencies-layer.zip
+output.json

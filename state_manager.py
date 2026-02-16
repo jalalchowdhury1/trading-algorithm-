@@ -6,6 +6,7 @@ Supports both local file storage (for local/GitHub) and S3 (for Lambda).
 import json
 import os
 from datetime import datetime
+import pytz
 
 # Check if running in AWS Lambda
 IS_LAMBDA = os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None
@@ -49,10 +50,14 @@ def write_state(signal, notified):
         notified: Whether we sent a notification this time
     """
     try:
+        # Get current time in Eastern Time
+        et_tz = pytz.timezone('America/New_York')
+        et_time = datetime.now(pytz.UTC).astimezone(et_tz)
+
         state = {
             'signal': signal,
-            'date': datetime.now().strftime('%Y-%m-%d'),
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'date': et_time.strftime('%Y-%m-%d'),
+            'timestamp': et_time.strftime('%Y-%m-%d %H:%M:%S'),
             'notified': notified
         }
         state_json = json.dumps(state, indent=2)

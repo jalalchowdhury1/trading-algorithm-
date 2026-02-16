@@ -4,42 +4,8 @@ import numpy as np
 from datetime import datetime, timedelta
 import os
 import requests
-import json
+from state_manager import read_state, write_state
 
-STATE_FILE = 'trading_state.json'
-
-def read_last_state():
-    """
-    Read the last trading signal state from file.
-    Returns dict with 'signal' and 'date', or None if file doesn't exist.
-    """
-    try:
-        if os.path.exists(STATE_FILE):
-            with open(STATE_FILE, 'r') as f:
-                return json.load(f)
-    except Exception as e:
-        print(f"⚠️  Could not read state file: {e}")
-    return None
-
-def write_state(signal, notified):
-    """
-    Write current trading signal state to file.
-
-    Args:
-        signal: The current trading signal
-        notified: Whether we sent a notification this time
-    """
-    try:
-        state = {
-            'signal': signal,
-            'date': datetime.now().strftime('%Y-%m-%d'),
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'notified': notified
-        }
-        with open(STATE_FILE, 'w') as f:
-            json.dump(state, f, indent=2)
-    except Exception as e:
-        print(f"⚠️  Could not write state file: {e}")
 
 def should_notify(current_signal, last_state):
     """
@@ -688,7 +654,7 @@ def main():
     print("STEP 4: NOTIFICATION DECISION")
     print("="*80 + "\n")
 
-    last_state = read_last_state()
+    last_state = read_state()
     notify, reason = should_notify(final_decision, last_state)
 
     print(f"Current Signal: {final_decision}")

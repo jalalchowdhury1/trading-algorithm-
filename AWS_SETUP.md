@@ -19,12 +19,13 @@ Complete guide to deploy your trading algorithm to AWS Lambda for 100% reliable 
 1. **Go to S3 Console:** https://s3.console.aws.amazon.com/
 2. **Click "Create bucket"**
 3. **Bucket settings:**
-   - **Bucket name:** `trading-algorithm-state-YOUR_NAME` (must be globally unique)
+   - **Bucket name:** `trading-algorithm-state-YOUR_NAME` (must be globally unique) 
+	I did this : trading-algorithm-state-jalal
    - **Region:** `us-east-1` (or your preferred region)
    - **Block all public access:** ✅ CHECKED (keep it private)
    - Leave other settings as default
 4. **Click "Create bucket"**
-5. **Note down your bucket name** - you'll need it later
+5. **Note down your bucket name** - you'll need it later - trading-algorithm-state-jalal
 
 ---
 

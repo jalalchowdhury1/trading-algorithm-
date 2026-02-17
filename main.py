@@ -50,8 +50,7 @@ def send_telegram_message(message, bot_token, chat_id):
         url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
         payload = {
             'chat_id': chat_id,
-            'text': message,
-            'parse_mode': 'HTML'
+            'text': message
         }
         response = requests.post(url, json=payload, timeout=10)
         response.raise_for_status()
@@ -106,14 +105,14 @@ def format_telegram_report(final_decision, rsi_cache, decision_path):
     elif "BIL" in final_decision:
         signal_emoji = "💵"  # Cash
 
-    message = f"""🎯 <b>TRADING SIGNAL</b>
+    message = f"""🎯 TRADING SIGNAL
 ━━━━━━━━━━━━━━━━
-{signal_emoji} <b>{final_decision}</b>
+{signal_emoji} {final_decision}
 
-🔍 <b>DECISION PATH:</b>
+🔍 DECISION PATH:
 {decision_path_text}
 
-📊 <b>KEY RSI VALUES:</b>
+📊 KEY RSI VALUES:
 📈 QQQ: {qqq_rsi:.1f} | SPY: {spy_rsi:.1f}
 📉 XLP: {xlp_rsi:.1f} | VIXY(50): {vixy_rsi_50:.1f}
 

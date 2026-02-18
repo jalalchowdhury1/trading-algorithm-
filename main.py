@@ -105,6 +105,9 @@ def format_telegram_report(final_decision, rsi_cache, decision_path):
     elif "BIL" in final_decision:
         signal_emoji = "💵"  # Cash
 
+    # Detect source: AWS Lambda or GitHub Actions
+    source = "☁️ AWS Lambda" if os.environ.get('AWS_LAMBDA_FUNCTION_NAME') else "🔧 GitHub Actions"
+
     message = f"""🎯 TRADING SIGNAL
 ━━━━━━━━━━━━━━━━
 {signal_emoji} {final_decision}
@@ -116,7 +119,8 @@ def format_telegram_report(final_decision, rsi_cache, decision_path):
 📈 QQQ: {qqq_rsi:.1f} | SPY: {spy_rsi:.1f}
 📉 XLP: {xlp_rsi:.1f} | VIXY(50): {vixy_rsi_50:.1f}
 
-⏰ {timestamp}"""
+⏰ {timestamp}
+📍 {source}"""
 
     return message
 

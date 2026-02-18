@@ -33,7 +33,7 @@ htmlcov/
 
 # AWS Lambda deployment artifacts
 lambda_package/
-lambda_deployment.zip
-lambda_deployment_fixed.zip
+lambda_deployment*.zip
 trading-dependencies-layer.zip
 output.json
+test_output*.json

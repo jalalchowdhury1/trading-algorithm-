@@ -1,6 +1,6 @@
 {
-  "signal": "1x VIX (VIXY)",
+  "signal": "1.5x VIX Group (VXX, UVIX)",
   "date": "2026-04-09",
-  "timestamp": "2026-04-09 11:18:11",
-  "notified": false
+  "timestamp": "2026-04-09 12:46:49",
+  "notified": true
 }

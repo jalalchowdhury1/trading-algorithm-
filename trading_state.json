@@ -1,6 +1,6 @@
 {
-  "signal": "BIL (T-Bill ETF)",
+  "signal": "1.5x VIX Group (VXX, UVIX)",
   "date": "2026-05-15",
-  "timestamp": "2026-05-15 12:01:17",
-  "notified": false
+  "timestamp": "2026-05-15 13:58:47",
+  "notified": true
 }

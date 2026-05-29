@@ -1,6 +1,6 @@
 {
-  "signal": "BIL (T-Bill ETF)",
-  "date": "2026-05-28",
-  "timestamp": "2026-05-28 13:32:36",
-  "notified": false
+  "signal": "VIX Blend (VXX=0.45, VIXM=0.2, UVIX=0.35)",
+  "date": "2026-05-29",
+  "timestamp": "2026-05-29 12:57:25",
+  "notified": true
 }

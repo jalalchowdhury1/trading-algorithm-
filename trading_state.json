@@ -1,6 +1,6 @@
 {
-  "signal": "BIL (T-Bill ETF)",
-  "date": "2026-06-09",
-  "timestamp": "2026-06-09 14:30:57",
-  "notified": false
+  "signal": "Buy TQQQ and FNGU (Bottom 2 RSIs: 25.30, 27.41)",
+  "date": "2026-06-10",
+  "timestamp": "2026-06-10 12:47:19",
+  "notified": true
 }

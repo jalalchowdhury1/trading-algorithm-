@@ -1,6 +1,6 @@
 {
-  "signal": "1.5x VIX Group (VXX, UVIX)",
-  "date": "2026-07-09",
-  "timestamp": "2026-07-09 14:16:26",
-  "notified": false
+  "signal": "VIX Blend (VXX=0.45, VIXM=0.2, UVIX=0.35)",
+  "date": "2026-07-10",
+  "timestamp": "2026-07-10 11:56:54",
+  "notified": true
 }

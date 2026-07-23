@@ -1,6 +1,6 @@
 {
-  "signal": "BIL (T-Bill ETF)",
-  "date": "2026-07-22",
-  "timestamp": "2026-07-22 15:51:29",
-  "notified": false
+  "signal": "Buy TQQQ and TECL (Bottom 2 RSIs: 25.79, 30.08)",
+  "date": "2026-07-23",
+  "timestamp": "2026-07-23 11:32:45",
+  "notified": true
 }

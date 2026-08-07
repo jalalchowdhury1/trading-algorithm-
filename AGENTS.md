@@ -29,9 +29,31 @@ the `AWS_LAMBDA_FUNCTION_NAME` env var:
    calls the same `main()`. When running in Lambda, `state_manager.py` detects
    `AWS_LAMBDA_FUNCTION_NAME` and reads/writes state to **S3** instead of the local file.
    EventBridge schedules invoke it. There is **no CI that deploys the Lambda** — deploys are
-   manual (`deploy_to_lambda.sh` builds a zip; the console uploads it). Whether the Lambda is
-   currently enabled is owner-side AWS state, not visible in the repo; the live, observable
-   path is GitHub Actions.
+   manual (`deploy_to_lambda.sh` builds a zip; the console uploads it).
+
+   **⚠️ 2026-08-06: the Lambda was found RUNNING — both paths were live at once.** This
+   section used to say only that Lambda enablement was "owner-side AWS state, not visible
+   in the repo". It was enabled: EventBridge **Scheduler** schedules
+   `trading-algorithm-935am` `cron(35 9 ? * MON-FRI)` and `trading-algorithm-every10min`
+   `cron(0/10 10-16 ? * MON-FRI)` (both `America/New_York`) invoked it ~43×/weekday. So the
+   algorithm ran on **two runners with two independent state stores**
+   (S3 `trading-algorithm-state-jalal` vs the committed `trading_state.json`), each with
+   its own Telegram creds and its own `notified` bookkeeping — and since `should_notify`
+   returns True on "first check of trading day", **both alerted every trading morning**.
+   They had already diverged: on 2026-08-06 S3 read `1.5x VIX Group (VXX, UVIX)`
+   (written 16:50, *after the close*) while the repo read `1x VIX (VIXY)` (11:59, in
+   session). Root cause of the divergence: `lambda_handler` never gated on
+   `market_hours.is_market_open()`, so five runs/day (16:10–16:50 ET) recomputed the
+   signal on after-hours data.
+
+   **Resolution: GitHub Actions is the single canonical runner** (as this doc always
+   said). The Scheduler schedules are DISABLED (not deleted — re-enable with
+   `aws scheduler update-schedule --name <n> --state ENABLED …` if the Lambda ever
+   becomes primary). `lambda_handler` now gates on market hours and **re-raises** on
+   error instead of returning `statusCode: 500` inside a 200 body — that pattern made
+   every crash a *successful* invocation, so `AWS/Lambda Errors` stayed 0.0 and no alarm
+   could ever see it. **If you re-enable the Lambda, disable the `schedule:` block in
+   `trading_alert.yml` in the same change** — never both.
 
 **Language/stack:** Python (workflow pins **3.9**; AWS docs historically mentioned 3.10/3.11 —
 see §Gotchas). Deps: `yfinance, pandas, numpy, pytz, requests, boto3` (`requirements.txt`).

@@ -140,10 +140,18 @@ def render(data: dict, previous: str | None) -> str:
     primary = (data["frontrunners"]["result"] if data["frontrunners"]["fired"]
                else data["ftlt"]["result"])
 
-    lines = ["<b>🔄 NUTS SIGNAL CHANGED</b>", ""]
-    if previous is None:
+    # --force-send exists for testing, so previous can equal now. Rendering
+    # "X → X" would read as a bug rather than a deliberate test.
+    if previous == now:
+        header = "<b>📊 NUTS SIGNAL — no change</b>"
+    elif previous is None:
+        header = "<b>📊 NUTS SIGNAL — first reading</b>"
+    else:
+        header = "<b>🔄 NUTS SIGNAL CHANGED</b>"
+
+    lines = [header, ""]
+    if previous is None or previous == now:
         lines.append(f"<b>{_esc(now)}</b>")
-        lines.append("<i>first reading — nothing to compare against</i>")
     else:
         lines.append(f"<b>{_esc(previous)}</b>  →  <b>{_esc(now)}</b>")
     lines.append(f"<i>{_esc(plain(primary))}</i>")

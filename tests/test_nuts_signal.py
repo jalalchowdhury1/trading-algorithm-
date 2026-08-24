@@ -143,7 +143,16 @@ def test_render_leads_with_the_transition():
 def test_render_handles_a_first_ever_reading():
     msg = ns.render(payload(), previous=None)
     assert "first reading" in msg
-    assert "→" not in msg.split("first reading")[0].split("CHANGED")[1]
+    assert "→  <b>" not in msg
+
+
+def test_render_of_a_forced_send_with_no_change_is_not_an_arrow():
+    """--force-send exists for testing; 'X → X' would read as a bug."""
+    data = payload()
+    msg = ns.render(data, previous=ns.holding(data))
+    assert "no change" in msg
+    assert "→  <b>" not in msg
+    assert "CHANGED" not in msg
 
 
 def test_render_shouts_when_the_rsi_self_test_failed():

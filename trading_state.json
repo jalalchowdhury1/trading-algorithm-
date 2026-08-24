@@ -1,6 +1,5 @@
 {
-  "signal": "BIL (T-Bill ETF)",
-  "date": "2026-08-24",
-  "timestamp": "2026-08-24 13:56:14",
-  "notified": false
+  "holding": "TQQQ + BIL/TQQQ",
+  "sent_at": "2026-08-24T14:26:19",
+  "source": "NUTS /evaluate"
 }

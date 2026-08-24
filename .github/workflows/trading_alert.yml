@@ -1,59 +1,79 @@
-name: Trading Algorithm Every 30min
+# Reads the NUTS signal and messages Telegram ONLY when the holding changed.
+#
+# Schedule is deliberately keyed to NUTS's own compute cron
+# (`cron(5,35 13-20 ? * MON-FRI)` — it recomputes at :05 and :35). We poll at
+# :10 and :40, five minutes behind, so we always read a freshly computed value
+# rather than racing it.
+#
+# 13-21 UTC covers market hours in BOTH DST states (9:30-16:00 ET is 13:30-20:00
+# UTC in EDT and 14:30-21:00 in EST). Extra runs outside the session are free:
+# the holding will not have changed, so nothing is sent. That is the point of
+# change-only messaging — polling more often costs noise nothing and shortens
+# the time to hear about a real move.
+name: NUTS signal watch
 
 on:
   schedule:
-    # First run at 9:35 AM ET (5 min after market opens)
-    - cron: '35 13-14 * * 1-5'  # Covers both EST (14:35 UTC) and EDT (13:35 UTC)
-    # Then every 30 min from 10:00 AM - 4:00 PM ET
-    - cron: '0,30 14-21 * * 1-5'  # :00 and :30 for hours 14-21 UTC (covers both timezones)
-  workflow_dispatch:  # Allow manual trigger for testing
+    - cron: '10,40 13-21 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      force_send:
+        description: "Send even if the holding did not change"
+        type: boolean
+        default: false
 
 permissions:
-  contents: write  # Allow workflow to commit and push changes
+  contents: write
+
+concurrency:
+  group: nuts-signal-watch
+  cancel-in-progress: false
 
 jobs:
-  trading-signal:
+  signal:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
+      - name: Validate secrets
+        run: |
+          [ -n "$TELEGRAM_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ] || {
+            echo "::error::Missing TELEGRAM_TOKEN / TELEGRAM_CHAT_ID repo secrets"; exit 1; }
+
+      - uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6
         with:
-          python-version: '3.9'
+          python-version: '3.12'
 
-      - name: Install dependencies
+      # No pip install: the signal path is pure stdlib now that NUTS owns the
+      # maths. pytest is dev-only and runs below.
+      - name: Unit tests
         run: |
-          pip install -r requirements.txt
+          pip install -q -r requirements-dev.txt
+          python -m pytest tests/ -q
 
-      - name: Check market hours
-        id: market_check
-        run: |
-          python3 market_hours.py
-        continue-on-error: true
+      - name: Read NUTS and alert on change
+        run: python main.py ${{ inputs.force_send && '--force-send' || '' }}
 
-      - name: Run trading algorithm
-        if: steps.market_check.outcome == 'success'
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      - name: Commit state if the holding changed
         run: |
-          python3 main.py
-
-      - name: Commit state file if changed
-        if: steps.market_check.outcome == 'success'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add trading_state.json
-          if ! git diff --quiet HEAD -- trading_state.json; then
-            git commit -m "Update trading signal state [skip ci]"
+          if ! git diff --cached --quiet; then
+            git commit -m "signal change: $(python -c "import json;print(json.load(open('trading_state.json'))['holding'])") [skip ci]"
+            git pull --rebase origin main
             git push
-            echo "✓ State file committed and pushed"
-          else
-            echo "ℹ️ No state changes to commit"
           fi
+
+      - name: Failure alert to Telegram
+        if: failure()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+            --data-urlencode chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode text="⚠️ NUTS signal watch FAILED: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

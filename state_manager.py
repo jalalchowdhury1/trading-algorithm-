@@ -1,81 +1,39 @@
-"""
-State management for trading algorithm.
-Supports both local file storage (for local/GitHub) and S3 (for Lambda).
-"""
+"""The last holding we told Jalal about.
 
+Committed back to the repo by the workflow, the hedgelab pattern — a GitHub
+Actions runner keeps no state of its own.
+
+The S3 path is GONE. Until 2026-08-06 this repo ran on BOTH GitHub Actions and
+AWS Lambda with two independent state stores, which diverged and double-alerted
+every morning. GitHub Actions is the single canonical runner; a second store is
+how you get a second answer.
+"""
+from __future__ import annotations
+
+import datetime as dt
 import json
-import os
-from datetime import datetime
-import pytz
+import pathlib
 
-# Check if running in AWS Lambda
-IS_LAMBDA = os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None
-
-STATE_FILE = 'trading_state.json'
-S3_BUCKET = os.environ.get('STATE_BUCKET_NAME', 'trading-algorithm-state')
-S3_KEY = 'trading_state.json'
-
-if IS_LAMBDA:
-    import boto3
-    s3_client = boto3.client('s3')
+STATE_PATH = pathlib.Path(__file__).with_name("trading_state.json")
 
 
-def read_state():
-    """
-    Read the last trading signal state.
-    Returns dict with 'signal' and 'date', or None if doesn't exist.
+def read_signal(path: pathlib.Path = STATE_PATH) -> str | None:
+    """The last holding we sent, or None if we have never sent one.
+
+    A missing or unreadable file reads as None, which renders as a "first
+    reading" message rather than a bogus change. Corrupt state must not
+    fabricate a transition that never happened.
     """
     try:
-        if IS_LAMBDA:
-            # Read from S3
-            response = s3_client.get_object(Bucket=S3_BUCKET, Key=S3_KEY)
-            state_json = response['Body'].read().decode('utf-8')
-            return json.loads(state_json)
-        else:
-            # Read from local file
-            if os.path.exists(STATE_FILE):
-                with open(STATE_FILE, 'r') as f:
-                    return json.load(f)
-    except Exception as e:
-        print(f"⚠️  Could not read state: {e}")
-    return None
+        value = json.loads(pathlib.Path(path).read_text()).get("holding")
+    except Exception:
+        return None
+    return value if isinstance(value, str) and value.strip() else None
 
 
-def write_state(signal, notified):
-    """
-    Write current trading signal state.
-
-    Args:
-        signal: The current trading signal
-        notified: Whether we sent a notification this time
-    """
-    try:
-        # Get current time in Eastern Time
-        et_tz = pytz.timezone('America/New_York')
-        et_time = datetime.now(pytz.UTC).astimezone(et_tz)
-
-        state = {
-            'signal': signal,
-            'date': et_time.strftime('%Y-%m-%d'),
-            'timestamp': et_time.strftime('%Y-%m-%d %H:%M:%S'),
-            'notified': notified
-        }
-        state_json = json.dumps(state, indent=2)
-
-        if IS_LAMBDA:
-            # Write to S3
-            s3_client.put_object(
-                Bucket=S3_BUCKET,
-                Key=S3_KEY,
-                Body=state_json,
-                ContentType='application/json'
-            )
-            print(f"✓ State saved to S3: s3://{S3_BUCKET}/{S3_KEY}")
-        else:
-            # Write to local file
-            with open(STATE_FILE, 'w') as f:
-                f.write(state_json)
-            print(f"✓ State saved to local file: {STATE_FILE}")
-
-    except Exception as e:
-        print(f"⚠️  Could not write state: {e}")
+def write_signal(holding: str, path: pathlib.Path = STATE_PATH) -> None:
+    pathlib.Path(path).write_text(json.dumps({
+        "holding": holding,
+        "sent_at": dt.datetime.now().isoformat(timespec="seconds"),
+        "source": "NUTS /evaluate",
+    }, indent=2) + "\n")

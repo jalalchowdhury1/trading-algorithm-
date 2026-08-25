@@ -11,8 +11,21 @@
 
 ## 1. What this is
 
-A GitHub Actions job that reads the **NUTS Algo** signal every 30 minutes
-during market hours and messages Telegram **only when the holding changed**.
+A GitHub Actions job that reads the **NUTS Algo** every 30 minutes during
+market hours and messages Telegram **only when something moved**. Two alerts,
+both change-only:
+
+| alert | fires when | means |
+|---|---|---|
+| 🔄 **CHANGED** | the holding moved | Composer will rebalance into this |
+| 🟠 **WARNING** | a Frontrunners trigger crossed into a closer band | heads-up, not a position change |
+
+**NUTS Frontrunners is an exact model of the Composer symphony Jalal actually
+trades** — verified 2026-08-24 against a screenshot of the live symphony: all
+10 conditions, same order, same thresholds, same RSI(10) window, same
+`→ FTLT` fallback. That is why NUTS's own per-condition distances are a real
+early warning about real money, and why this repo needs no strategy of its
+own.
 
 Silence is the normal outcome and the entire point: a message means the
 position moved. There is deliberately **no daily heartbeat** — liveness is
@@ -67,11 +80,16 @@ racing the recompute.
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
-.venv/bin/python -m pytest tests/ -q        # 22 tests, no network needed
+.venv/bin/python -m pytest tests/ -q         # 47 tests, no network needed
 
-.venv/bin/python main.py --dry-run          # live NUTS read, sends nothing
-.venv/bin/python main.py --force-send       # send even if unchanged
-.venv/bin/python main.py                    # the real thing
+.venv/bin/python main.py --dry-run           # live NUTS read, sends nothing
+.venv/bin/python main.py --force-send        # send the SIGNAL even if unchanged
+.venv/bin/python main.py --force-warning     # send a WARNING for whatever is near
+.venv/bin/python main.py --no-warnings       # signal changes only
+.venv/bin/python main.py                     # the real thing
+
+# same two switches from the Actions UI / CLI:
+gh workflow run trading_alert.yml --repo jalalchowdhury1/trading-algorithm- -f force_warning=true
 ```
 
 No third-party dependencies: stdlib `urllib` for both NUTS and Telegram.
@@ -82,6 +100,30 @@ No third-party dependencies: stdlib `urllib` for both NUTS and Telegram.
 |---|---|
 | `TELEGRAM_BOT_TOKEN` | repo secret. **Note the name** — the workflow maps it to `TELEGRAM_TOKEN` in `env:`. Do not rename one without the other. |
 | `TELEGRAM_CHAT_ID` | repo secret |
+
+## 4b. Proximity warnings
+
+Bands, on `abs(distance)` from a Frontrunners trigger's threshold:
+
+| band | distance | glyph |
+|---|---|---|
+| IMMINENT | ≤ 2 | 🔴 |
+| WARNING | ≤ 5 | 🟠 |
+| WATCH | ≤ 10 | 🟡 |
+| QUIET | > 10 | — |
+
+**Alerts fire on a CROSSING, never on a level.** A trigger parked 8 away would
+otherwise ping on all ~16 polls a day. `escalations()` reports a condition only
+when it moves to a closer band, or when it clears to QUIET entirely. Backing
+off WARNING → WATCH is deliberately silent: still near, not news.
+
+**A condition that has already FIRED is never a warning** — that is the CHANGED
+alert's job. `band_of()` returns QUIET for `result: true`.
+
+`state_manager.read_bands()` returns **None**, not `{}`, when nothing was ever
+recorded. `escalations()` treats None as "first run, report what is already
+near"; `{}` would mean "everything was quiet", inventing crossings that never
+happened.
 
 ## 5. Gotchas / hard rules
 
@@ -115,7 +157,14 @@ No third-party dependencies: stdlib `urllib` for both NUTS and Telegram.
    gated on market hours). `lambda_function.py` and `deploy_to_lambda.sh` are
    deleted. **Do not reintroduce a second runner.**
 
-7. **Silence is not health.** Because the bot only speaks on change, a dead job
+7. **`--force-warning` and `--dry-run` must never satisfy the fleet probe.**
+   The marker `NUTS-SIGNAL OK unchanged=` / `NUTS-SIGNAL CHANGED ` prints only
+   when the run reached NUTS AND its RSI unit test passed. `--dry-run` prints
+   nothing and writes nothing. Seven tests in `tests/test_marker.py` pin this,
+   because `force_warning` is a workflow_dispatch input — without the rule, a
+   manual test would paint the row green while the cron was dead.
+
+8. **Silence is not health.** Because the bot only speaks on change, a dead job
    looks exactly like a quiet market from Telegram. The fleet-health probe
    (`github-notion-sync/fleet_health.py`, entry
    "trading-algorithm- (30-min signal)") is the only liveness signal, and it
@@ -135,10 +184,11 @@ No third-party dependencies: stdlib `urllib` for both NUTS and Telegram.
 
 ```
 main.py              orchestration: fetch → compare → send-or-be-silent
-nuts_signal.py       NUTS client, holding(), change detection, rendering
+nuts_signal.py       NUTS client, holding(), change detection, rendering,
+                     proximity bands + escalations + render_warning
 state_manager.py     last-sent holding, committed back by the workflow
 telegram_sender.py   HTML sender with a no-parse_mode retry
 market_hours.py      legacy ET market-hours helper
-tests/               22 tests, fully offline
+tests/               47 tests, fully offline (test_marker.py + test_warnings.py)
 .github/workflows/trading_alert.yml
 ```

@@ -31,9 +31,37 @@ def read_signal(path: pathlib.Path = STATE_PATH) -> str | None:
     return value if isinstance(value, str) and value.strip() else None
 
 
-def write_signal(holding: str, path: pathlib.Path = STATE_PATH) -> None:
-    pathlib.Path(path).write_text(json.dumps({
+def read_bands(path: pathlib.Path = STATE_PATH) -> dict | None:
+    """Last known proximity band per Frontrunners condition.
+
+    None (not {}) when we have never recorded any — `escalations` treats those
+    differently: None means "first run, report what is already near", whereas
+    {} would mean "everything was quiet", inventing crossings that never
+    happened.
+    """
+    try:
+        bands = json.loads(pathlib.Path(path).read_text()).get("bands")
+    except Exception:
+        return None
+    return bands if isinstance(bands, dict) and bands else None
+
+
+def write_state(holding: str, bands: dict | None = None,
+                path: pathlib.Path = STATE_PATH) -> None:
+    path = pathlib.Path(path)
+    try:
+        existing = json.loads(path.read_text())
+    except Exception:
+        existing = {}
+    existing.update({
         "holding": holding,
         "sent_at": dt.datetime.now().isoformat(timespec="seconds"),
         "source": "NUTS /evaluate",
-    }, indent=2) + "\n")
+    })
+    if bands is not None:
+        existing["bands"] = bands
+    path.write_text(json.dumps(existing, indent=2) + "\n")
+
+
+def write_signal(holding: str, path: pathlib.Path = STATE_PATH) -> None:
+    write_state(holding, path=path)

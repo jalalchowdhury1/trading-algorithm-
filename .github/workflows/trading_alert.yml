@@ -21,6 +21,10 @@ on:
         description: "Send even if the holding did not change"
         type: boolean
         default: false
+      force_warning:
+        description: "Send a proximity warning for whatever is near (test)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -58,7 +62,7 @@ jobs:
           python -m pytest tests/ -q
 
       - name: Read NUTS and alert on change
-        run: python main.py ${{ inputs.force_send && '--force-send' || '' }}
+        run: python main.py ${{ inputs.force_send && '--force-send' || '' }} ${{ inputs.force_warning && '--force-warning' || '' }}
 
       - name: Commit state if the holding changed
         run: |

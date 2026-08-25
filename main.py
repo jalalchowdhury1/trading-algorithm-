@@ -21,7 +21,7 @@ import telegram_sender
 
 
 def run(dry_run: bool = False, force_send: bool = False,
-        no_warnings: bool = False) -> int:
+        no_warnings: bool = False, force_warning: bool = False) -> int:
     try:
         data = nuts_signal.fetch()
     except Exception as exc:
@@ -40,7 +40,10 @@ def run(dry_run: bool = False, force_send: bool = False,
     previous = state_manager.read_signal()
     bands_now = nuts_signal.frontrunner_bands(data)
     bands_was = state_manager.read_bands()
-    moves = [] if no_warnings else nuts_signal.escalations(bands_now, bands_was)
+    # force_warning re-runs the first-run path: report whatever is currently
+    # inside a band even though nothing crossed. For testing the render only.
+    moves = ([] if no_warnings else
+             nuts_signal.escalations(bands_now, None if force_warning else bands_was))
 
     print(f"NUTS holding: {now!r}   previous: {previous!r}")
     near = {k: v for k, v in bands_now.items() if v != nuts_signal.QUIET}
@@ -85,9 +88,12 @@ def main() -> int:
                     help="send the signal even if the holding did not change")
     ap.add_argument("--no-warnings", action="store_true",
                     help="suppress proximity warnings (signal changes only)")
+    ap.add_argument("--force-warning", action="store_true",
+                    help="render a warning for whatever is currently near, "
+                         "even though nothing crossed (testing)")
     args = ap.parse_args()
     return run(dry_run=args.dry_run, force_send=args.force_send,
-               no_warnings=args.no_warnings)
+               no_warnings=args.no_warnings, force_warning=args.force_warning)
 
 
 if __name__ == "__main__":

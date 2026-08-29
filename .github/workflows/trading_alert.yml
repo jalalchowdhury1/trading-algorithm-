@@ -1,9 +1,17 @@
 # Reads the NUTS signal and messages Telegram ONLY when the holding changed.
 #
 # Schedule is deliberately keyed to NUTS's own compute cron
-# (`cron(5,35 13-20 ? * MON-FRI)` — it recomputes at :05 and :35). We poll at
-# :10 and :40, five minutes behind, so we always read a freshly computed value
-# rather than racing it.
+# (`cron(5,35 13-20 ? * MON-FRI)` — it recomputes at :05 and :35).
+#
+# DEMOTED TO BACKSTOP (One Clock, 2026-08-29). The primary poll is AWS
+# EventBridge `one-clock-trading-alert`, cron(10,40 9-16 ? * MON-FRI *)
+# America/New_York — :10/:40 ET, five minutes behind each NUTS recompute,
+# arriving here as workflow_dispatch. This cron runs at :20/:50 UTC: still
+# 15 min behind the recompute (fresh), 10 min behind the primary, and never
+# the same minute as it — the previous :10/:40 shared the primary's exact
+# minute in every overlapping hour, making them co-primaries (harmless here
+# only because change-only messaging + the concurrency group queue the pair,
+# but two runs per slot forever is noise, not a backstop).
 #
 # 13-21 UTC covers market hours in BOTH DST states (9:30-16:00 ET is 13:30-20:00
 # UTC in EDT and 14:30-21:00 in EST). Extra runs outside the session are free:
@@ -14,7 +22,7 @@ name: NUTS signal watch
 
 on:
   schedule:
-    - cron: '10,40 13-21 * * 1-5'
+    - cron: '20,50 13-21 * * 1-5'
   workflow_dispatch:
     inputs:
       force_send:

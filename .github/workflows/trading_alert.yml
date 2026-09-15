@@ -84,8 +84,9 @@ jobs:
           fi
 
       - name: Failure alert to Telegram
-        if: failure()
+        # 2026-09-15: also fire on job-timeout cancellation (silent-hang incident)
+        if: failure() || cancelled()
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+          curl -s -m 20 -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             --data-urlencode chat_id="${TELEGRAM_CHAT_ID}" \
             --data-urlencode text="⚠️ NUTS signal watch FAILED: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

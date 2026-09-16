@@ -1,0 +1,19 @@
+name: Test alert
+# Dispatch-only. This repo is the one whose token secret is TELEGRAM_BOT_TOKEN
+# (not TELEGRAM_TOKEN), so this proves the shared action is wired to the right
+# secret name here. Green run + ping received = confirmed.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  test-alert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Send test alert
+        uses: jalalchowdhury1/gh-actions/telegram-alert@v1
+        with:
+          bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          text: "✅ NUTS signal watch — shared telegram-alert wiring confirmed (test message, ignore)"
+          fail_on_error: 'true'   # a failed send must go RED here, unlike a real alert

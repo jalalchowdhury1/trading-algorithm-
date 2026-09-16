@@ -85,8 +85,12 @@ jobs:
 
       - name: Failure alert to Telegram
         # 2026-09-15: also fire on job-timeout cancellation (silent-hang incident)
+        # 2026-09-15: curl replaced by the shared action (jalalchowdhury1/gh-actions).
+        # NOTE: this repo's token secret is TELEGRAM_BOT_TOKEN (the job env aliases it
+        # to TELEGRAM_TOKEN); pass the real secret name here.
         if: failure() || cancelled()
-        run: |
-          curl -s -m 20 -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
-            --data-urlencode chat_id="${TELEGRAM_CHAT_ID}" \
-            --data-urlencode text="⚠️ NUTS signal watch FAILED: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        uses: jalalchowdhury1/gh-actions/telegram-alert@v1
+        with:
+          bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          text: "⚠️ NUTS signal watch FAILED: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

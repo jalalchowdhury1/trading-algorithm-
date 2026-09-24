@@ -1,6 +1,6 @@
 {
-  "holding": "TQQQ + BIL/TQQQ",
-  "sent_at": "2026-09-23T14:40:52",
+  "holding": "TQQQ + BIL",
+  "sent_at": "2026-09-24T15:10:52",
   "source": "NUTS /evaluate",
   "bands": {
     "SPY RSI(10) > 80": "QUIET",

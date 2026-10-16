@@ -1,11 +1,11 @@
 {
   "holding": "VIXY",
-  "sent_at": "2026-10-16T14:40:54",
+  "sent_at": "2026-10-16T15:10:52",
   "source": "NUTS /evaluate",
   "bands": {
     "SPY RSI(10) > 80": "QUIET",
     "QQQ RSI(10) > 79": "QUIET",
-    "VTV RSI(10) > 79": "QUIET",
+    "VTV RSI(10) > 79": "WATCH",
     "VOX RSI(10) > 84": "QUIET",
     "XLK RSI(10) > 79": "QUIET",
     "XLP RSI(10) > 75": "QUIET",

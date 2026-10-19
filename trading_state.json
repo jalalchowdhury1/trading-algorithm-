@@ -1,6 +1,6 @@
 {
   "holding": "TQQQ + BIL",
-  "sent_at": "2026-10-19T16:10:50",
+  "sent_at": "2026-10-19T16:40:52",
   "source": "NUTS /evaluate",
   "bands": {
     "SPY RSI(10) > 80": "QUIET",
@@ -8,10 +8,10 @@
     "VTV RSI(10) > 79": "QUIET",
     "VOX RSI(10) > 84": "QUIET",
     "XLK RSI(10) > 79": "QUIET",
-    "XLP RSI(10) > 75": "WARNING",
+    "XLP RSI(10) > 75": "IMMINENT",
     "XLF RSI(10) > 80": "QUIET",
     "SOXX RSI(10) < 30": "WARNING",
-    "QQQ RSI(10) < 30": "QUIET",
+    "QQQ RSI(10) < 30": "WATCH",
     "SPY RSI(10) < 30": "QUIET"
   }
 }

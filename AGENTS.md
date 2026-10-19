@@ -80,7 +80,7 @@ racing the recompute.
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
-.venv/bin/python -m pytest tests/ -q         # 47 tests, no network needed
+.venv/bin/python -m pytest tests/ -q         # 52 tests, no network needed
 
 .venv/bin/python main.py --dry-run           # live NUTS read, sends nothing
 .venv/bin/python main.py --force-send        # send the SIGNAL even if unchanged
@@ -100,6 +100,13 @@ No third-party dependencies: stdlib `urllib` for both NUTS and Telegram.
 |---|---|
 | `TELEGRAM_BOT_TOKEN` | repo secret. **Note the name** — the workflow maps it to `TELEGRAM_TOKEN` in `env:`. Do not rename one without the other. |
 | `TELEGRAM_CHAT_ID` | repo secret |
+| `TELEGRAM_API_BASE` | optional, unset = the health-hub Telegram Inbox relay (`https://jalal-health.vercel.app/api/tg/frontrunners`, 19 Oct 2026). Set it to `https://api.telegram.org` to roll back without a code change. |
+
+**Telegram Inbox relay (19 Oct 2026, canary).** `telegram_sender._post` sends to the relay first (8 s);
+connection error / timeout / 5xx / 401 (token not allowlisted) / 404 → the same request straight to
+`api.telegram.org`. Telegram's own 400 still comes back through the relay and triggers the plain-text
+retry. The message text is unchanged; the relay archives it (`inbox search` on the Mac) and shows a
+one-line doorbell with an Open card. Tests: `tests/test_telegram_sender.py`.
 
 ## 4b. Proximity warnings
 
@@ -189,6 +196,6 @@ nuts_signal.py       NUTS client, holding(), change detection, rendering,
 state_manager.py     last-sent holding, committed back by the workflow
 telegram_sender.py   HTML sender with a no-parse_mode retry
 market_hours.py      legacy ET market-hours helper
-tests/               47 tests, fully offline (test_marker.py + test_warnings.py)
+tests/               52 tests, fully offline (test_nuts_signal.py + test_warnings.py + test_telegram_sender.py)
 .github/workflows/trading_alert.yml
 ```

@@ -1,6 +1,6 @@
 {
-  "holding": "SOXL",
-  "sent_at": "2026-10-19T20:10:55",
+  "holding": "VIXY",
+  "sent_at": "2026-10-20T13:40:55",
   "source": "NUTS /evaluate",
   "bands": {
     "SPY RSI(10) > 80": "QUIET",
@@ -8,10 +8,10 @@
     "VTV RSI(10) > 79": "QUIET",
     "VOX RSI(10) > 84": "QUIET",
     "XLK RSI(10) > 79": "QUIET",
-    "XLP RSI(10) > 75": "IMMINENT",
+    "XLP RSI(10) > 75": "QUIET",
     "XLF RSI(10) > 80": "QUIET",
     "SOXX RSI(10) < 30": "QUIET",
-    "QQQ RSI(10) < 30": "WATCH",
+    "QQQ RSI(10) < 30": "WARNING",
     "SPY RSI(10) < 30": "QUIET"
   }
 }

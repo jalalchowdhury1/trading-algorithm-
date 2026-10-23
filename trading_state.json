@@ -1,6 +1,6 @@
 {
   "holding": "SOXL",
-  "sent_at": "2026-10-23T14:10:56",
+  "sent_at": "2026-10-23T15:10:54",
   "source": "NUTS /evaluate",
   "bands": {
     "SPY RSI(10) > 80": "QUIET",
@@ -11,7 +11,7 @@
     "XLP RSI(10) > 75": "WATCH",
     "XLF RSI(10) > 80": "QUIET",
     "SOXX RSI(10) < 30": "QUIET",
-    "QQQ RSI(10) < 30": "WARNING",
-    "SPY RSI(10) < 30": "WATCH"
+    "QQQ RSI(10) < 30": "WATCH",
+    "SPY RSI(10) < 30": "QUIET"
   }
 }

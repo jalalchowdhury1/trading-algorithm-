@@ -21,7 +21,6 @@ returns exactly what the website shows, at zero cost to NUTS.
 """
 from __future__ import annotations
 
-import datetime as dt
 import html
 import json
 import urllib.request
@@ -142,42 +141,35 @@ def render(data: dict, previous: str | None) -> str:
 
     # --force-send exists for testing, so previous can equal now. Rendering
     # "X → X" would read as a bug rather than a deliberate test.
-    if previous == now:
-        header = "<b>📊 NUTS SIGNAL — no change</b>"
-    elif previous is None:
-        header = "<b>📊 NUTS SIGNAL — first reading</b>"
-    else:
-        header = "<b>🔄 NUTS SIGNAL CHANGED</b>"
-
-    lines = [header, ""]
+    # ALERT-STYLE (24 Oct 2026): one bold line + one italic line; the rest is the card's detail.
     if previous is None or previous == now:
-        lines.append(f"<b>{_esc(now)}</b>")
+        header = f"<b>📈 NUTS · {_esc(now)}</b>"
+        note = "first reading" if previous is None else "no change"
     else:
-        lines.append(f"<b>{_esc(previous)}</b>  →  <b>{_esc(now)}</b>")
-    lines.append(f"<i>{_esc(plain(primary))}</i>")
+        header = f"<b>📈 NUTS flipped · {_esc(previous)} → {_esc(now)}</b>"
+        note = plain(primary)
+    unit = data.get("unit_test") or {}
+    if not unit.get("pass"):
+        note = "RSI self-test failed · do not trade"
+    lines = [header, f"<i>{_esc(note)}</i>"]
+    if note != plain(primary):
+        lines += ["", _esc(plain(primary))]
 
     path = [condition_line(n) for n in data[source]["nodes"]
             if n.get("active") and not n.get("is_leaf")]
     if path:
-        lines += ["", f"<b>WHY — {_esc(source.upper())}</b>",
+        lines += ["", f"<b>Why · {_esc(source)}</b>",
                   "<blockquote>" + "\n".join(path) + "</blockquote>"]
 
     flips = near_flips(data)
     if flips:
-        lines += ["", "<b>⚡ NEAREST TO FLIPPING</b>",
+        lines += ["", "<b>⚡ Nearest to flipping</b>",
                   "<blockquote>" + "\n".join(condition_line(n) for n in flips)
                   + "</blockquote>"]
 
-    unit = data.get("unit_test") or {}
     errors = data.get("download_errors") or []
-    try:
-        stamp = dt.datetime.fromisoformat(
-            data["evaluated_at"]).strftime("%-I:%M %p ET · %-d %b")
-    except Exception:
-        stamp = str(data.get("evaluated_at", ""))
-    footer = f"{'✅' if unit.get('pass') else '🚨 RSI SELF-TEST FAILED —'} " \
-             f"{'RSI self-test' if unit.get('pass') else 'DO NOT TRADE'} · {_esc(stamp)}"
-    lines += ["", f"<i>{footer}</i>"]
+    if unit.get("pass"):
+        lines += ["", "<i>✅ RSI self-test</i>"]
     if errors:
         lines.append(f"<i>⚠️ {len(errors)} data download errors</i>")
     return "\n".join(lines)

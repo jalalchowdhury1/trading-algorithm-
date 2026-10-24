@@ -110,6 +110,11 @@ one-line doorbell with an Open card. Tests: `tests/test_telegram_sender.py`.
 
 ## 4b. Proximity warnings
 
+**OFF on the schedule since 24 Oct 2026** (owner: "only give me when there is an actual
+flip"). `trading_alert.yml` passes `--no-warnings` unless the `force_warning` input is set,
+so Telegram gets the 🔄 signal-changed message only. The code below still works for a
+manual `force_warning=true` run. Never turn it back on without his say.
+
 Bands, on `abs(distance)` from a Frontrunners trigger's threshold:
 
 | band | distance | glyph |

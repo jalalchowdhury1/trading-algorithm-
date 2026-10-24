@@ -70,7 +70,7 @@ jobs:
           python -m pytest tests/ -q
 
       - name: Read NUTS and alert on change
-        run: python main.py ${{ inputs.force_send && '--force-send' || '' }} ${{ inputs.force_warning && '--force-warning' || '' }}
+        run: python main.py ${{ inputs.force_send && '--force-send' || '' }} ${{ inputs.force_warning && '--force-warning' || '--no-warnings' }}  # 24 Oct 2026, owner: Telegram only on an actual flip
 
       - name: Commit state if the holding changed
         run: |

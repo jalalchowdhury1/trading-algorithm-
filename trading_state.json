@@ -1,6 +1,6 @@
 {
-  "holding": "TECL",
-  "sent_at": "2026-11-02T19:40:52",
+  "holding": "SOXL",
+  "sent_at": "2026-11-02T20:40:55",
   "source": "NUTS /evaluate",
   "bands": {
     "SPY RSI(10) > 80": "QUIET",
@@ -8,10 +8,10 @@
     "VTV RSI(10) > 79": "WATCH",
     "VOX RSI(10) > 84": "QUIET",
     "XLK RSI(10) > 79": "QUIET",
-    "XLP RSI(10) > 75": "WARNING",
+    "XLP RSI(10) > 75": "WATCH",
     "XLF RSI(10) > 80": "QUIET",
-    "SOXX RSI(10) < 30": "IMMINENT",
+    "SOXX RSI(10) < 30": "QUIET",
     "QQQ RSI(10) < 30": "QUIET",
-    "SPY RSI(10) < 30": "WATCH"
+    "SPY RSI(10) < 30": "WARNING"
   }
 }

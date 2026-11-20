@@ -1,6 +1,6 @@
 {
-  "holding": "UPRO",
-  "sent_at": "2026-11-20T15:10:53",
+  "holding": "SOXL",
+  "sent_at": "2026-11-20T15:40:55",
   "source": "NUTS /evaluate",
   "bands": {
     "SPY RSI(10) > 80": "QUIET",
@@ -10,8 +10,8 @@
     "XLK RSI(10) > 79": "QUIET",
     "XLP RSI(10) > 75": "QUIET",
     "XLF RSI(10) > 80": "QUIET",
-    "SOXX RSI(10) < 30": "IMMINENT",
-    "QQQ RSI(10) < 30": "IMMINENT",
+    "SOXX RSI(10) < 30": "QUIET",
+    "QQQ RSI(10) < 30": "QUIET",
     "SPY RSI(10) < 30": "QUIET"
   }
 }

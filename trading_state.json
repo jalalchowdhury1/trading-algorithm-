@@ -1,6 +1,6 @@
 {
-  "holding": "TLT + TQQQ",
-  "sent_at": "2026-11-25T17:10:51",
+  "holding": "TLT + BIL",
+  "sent_at": "2026-11-25T19:10:52",
   "source": "NUTS /evaluate",
   "bands": {
     "SPY RSI(10) > 80": "QUIET",
@@ -10,8 +10,8 @@
     "XLK RSI(10) > 79": "QUIET",
     "XLP RSI(10) > 75": "QUIET",
     "XLF RSI(10) > 80": "QUIET",
-    "SOXX RSI(10) < 30": "WARNING",
-    "QQQ RSI(10) < 30": "WARNING",
-    "SPY RSI(10) < 30": "WATCH"
+    "SOXX RSI(10) < 30": "WATCH",
+    "QQQ RSI(10) < 30": "WATCH",
+    "SPY RSI(10) < 30": "QUIET"
   }
 }
